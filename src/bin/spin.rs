@@ -1,4 +1,5 @@
 use anyhow::Error;
+use lazy_static::lazy_static;
 use spin_cli::commands::{
     bindle::BindleCommands, new::NewCommand, templates::TemplateCommands, up::UpCommand,
 };
@@ -14,11 +15,20 @@ async fn main() -> Result<(), Error> {
     SpinApp::from_args().run().await
 }
 
+lazy_static! {
+    pub static ref VERSION: String = version();
+}
+
+/// Helper for passing VERSION to structopt.
+fn version_info() -> &'static str {
+    &VERSION
+}
+
 /// The Spin CLI
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "spin",
-    version = env!("CARGO_PKG_VERSION"),
+    version = version_info(),
     global_settings = &[
         AppSettings::VersionlessSubcommands,
         AppSettings::ColoredHelp
@@ -40,4 +50,14 @@ impl SpinApp {
             SpinApp::Bindle(cmd) => cmd.run().await,
         }
     }
+}
+
+fn version() -> String {
+    /// Returns version information, similar to: 0.1.0 (2be4034 2022-03-31).
+    format!(
+        "{} ({} {})",
+        env!("VERGEN_BUILD_SEMVER"),
+        env!("VERGEN_GIT_SHA_SHORT"),
+        env!("VERGEN_GIT_COMMIT_DATE")
+    )
 }
